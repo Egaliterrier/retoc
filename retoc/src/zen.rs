@@ -916,8 +916,11 @@ impl FZenPackageHeader {
         };
 
         let bulk_data: Vec<FBulkDataMapEntry> = if has_bulk_data {
-            // In 5.4+, there is padding before the bulk data map size
-            if versioning_info.package_file_version.file_version_ue5 >= EUnrealEngineObjectUE5Version::PropertyTagCompleteTypeName as i32 {
+            // The padding u64 before bulk_data_map_size was introduced in UE 5.4 (PropertyTagCompleteTypeName)
+            // and removed in UE 5.6 (OsSubObjectShadowSerialization). So it only applies to UE 5.4 and 5.5.
+            let has_bulk_data_padding = versioning_info.package_file_version.file_version_ue5 >= EUnrealEngineObjectUE5Version::PropertyTagCompleteTypeName as i32
+                && versioning_info.package_file_version.file_version_ue5 < EUnrealEngineObjectUE5Version::OsSubObjectShadowSerialization as i32;
+            if has_bulk_data_padding {
                 let bulk_data_padding: u64 = s.de()?;
                 for _ in 0..bulk_data_padding {
                     let _padding: u8 = s.de()?;
